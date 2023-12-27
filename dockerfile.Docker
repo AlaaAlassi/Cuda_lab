@@ -1,0 +1,11 @@
+# Use an official CUDA base image from NVIDIA
+FROM nvidia/cuda:11.0.3-devel-ubuntu20.04
+#nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Set the working directory
+WORKDIR /app
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    cmake
