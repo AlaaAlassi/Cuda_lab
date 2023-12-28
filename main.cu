@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include <fstream>
 #include <cuda_runtime.h>
 
 #define MASK_SIZE 16
@@ -63,6 +64,25 @@ void convolutionCPU(float *inputImage, float *outputImage, int width, int height
     }
 }
 
+// Function to save an image in CSV format
+void saveImageCSV(const std::string &filename, float *image, int width, int height) {
+    std::ofstream outputFile(filename);
+    if (outputFile.is_open()) {
+        for (int row = 0; row < height; ++row) {
+            for (int col = 0; col < width; ++col) {
+                outputFile << image[row * width + col];
+                if (col < width - 1) {
+                    outputFile << ",";
+                }
+            }
+            outputFile << "\n";
+        }
+        outputFile.close();
+    } else {
+        std::cerr << "Unable to open file: " << filename << std::endl;
+    }
+}
+
 int main(int argc, char **argv) {
     // Check if a command-line argument is provided to choose implementation
     bool useGPU = true;
@@ -116,6 +136,12 @@ int main(int argc, char **argv) {
         cudaEventElapsedTime(&elapsedTime, start, stop);
         std::cout << "Time taken by convolutionKernel (GPU): " << elapsedTime << " milliseconds" << std::endl;
 
+        // Save GPU output image to CSV
+        float *outputImageGPU = new float[size];
+        cudaMemcpy(outputImageGPU, d_output, size * sizeof(float), cudaMemcpyDeviceToHost);
+        saveImageCSV("output_gpu.csv", outputImageGPU, width, height);
+        delete[] outputImageGPU;
+
     } else {
         // Measure time for CPU implementation
         clock_t startCPU = clock();
@@ -127,6 +153,9 @@ int main(int argc, char **argv) {
         clock_t stopCPU = clock();
         double elapsedTime = static_cast<double>(stopCPU - startCPU) / CLOCKS_PER_SEC * 1000.0;
         std::cout << "Time taken by convolutionCPU (CPU): " << elapsedTime << " milliseconds" << std::endl;
+
+        // Save CPU output image to CSV
+        saveImageCSV("output_cpu.csv", inputImage, width, height);
     }
 
     // Free GPU memory
