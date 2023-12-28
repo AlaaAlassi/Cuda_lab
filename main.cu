@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cuda_runtime.h>
 
-#define MASK_SIZE 3
+#define MASK_SIZE 16
 #define TILE_SIZE 32
 
 // Define size, width, and height
@@ -14,7 +14,28 @@ const int size = width * height;
 
 // Function for GPU implementation
 __global__ void convolutionKernel(float *inputImage, float *outputImage, int width, int height) {
-    // (Same as before...)
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (col < width && row < height) {
+        int startCol = col - MASK_SIZE / 2;
+        int startRow = row - MASK_SIZE / 2;
+
+        float sum = 0.0f;
+
+        for (int i = 0; i < MASK_SIZE; ++i) {
+            for (int j = 0; j < MASK_SIZE; ++j) {
+                int currentCol = startCol + j;
+                int currentRow = startRow + i;
+
+                if (currentCol >= 0 && currentCol < width && currentRow >= 0 && currentRow < height) {
+                    sum += inputImage[currentRow * width + currentCol];
+                }
+            }
+        }
+
+        outputImage[row * width + col] = sum / (MASK_SIZE * MASK_SIZE);
+    }
 }
 
 // Function for CPU implementation
